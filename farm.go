@@ -4,8 +4,7 @@ import (
 	"image"
 	"image/color"
     "time"
-
-	"fmt"
+    "fmt"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 )
@@ -16,38 +15,37 @@ type Coord struct {
 }
 
 type Player struct {
-  Pos Coord
-  Dir Coord
+	Pos Coord
+	Dir Coord
 }
 
 type World struct {
-	Map    [140][140]int
+	Map    [50][50]int
 	Width  int
 	Height int
 }
 
-
 var (
-	fullscreen = true
-	scale      = 6.0
+	fullscreen = false
+	scale      = 10.0
 	world      = World{}
+    fps = 60.0
 
-	player = Player{Coord{5,5},Coord{0,0}}
+	player = Player{Coord{20, 20}, Coord{0, 0}}
 )
 
 func setup() {
-	world.Height = 140
-	world.Width = 140
+	world.Height = 50
+	world.Width = 50
 }
 
 func moveEntities() {
-  fmt.Println("a")
-  newX := player.Pos.X + player.Dir.X
-  newY := player.Pos.Y + player.Dir.Y
-  if (newX > 0 && newX < world.Width) && (newY > 0 && newY < world.Height) {
-    player.Pos.X = newX
-    player.Pos.Y = newY
-  }
+	newX := player.Pos.X + player.Dir.X
+	newY := player.Pos.Y + player.Dir.Y
+	if (newX > 0 && newX < world.Width) && (newY > 0 && newY < world.Height) {
+		player.Pos.X = newX
+		player.Pos.Y = newY
+	}
 }
 
 // from the global variables that hold the game state, draw a frame of the game into
@@ -80,7 +78,7 @@ func frame() *image.RGBA {
 func run() {
 
 	cfg := pixelgl.WindowConfig{
-		Bounds:      pixel.R(0, 0, float64(world.Width)*scale, float64(world.Height)*scale),
+		Bounds:      pixel.R(0, 0, 1000,1000),
 		VSync:       true,
 		Undecorated: false,
 	}
@@ -94,24 +92,25 @@ func run() {
 		panic(err)
 	}
 
-	c := win.Bounds().Center()
-
 	last := time.Now()
-
 	for !win.Closed() {
+       // advance game
+
+		dt := time.Since(last).Seconds()
+        if dt < 1/fps {
+          fmt.Println("Sleeping!")
+          time.Sleep(time.Duration(1/fps - dt)) // if we're running faster than our fps, wait
+        }
+		last = time.Now()
+
+        moveEntities()
+		haltPlayer()
+
+        // handle keys
 		if win.JustPressed(pixelgl.KeyEscape) || win.JustPressed(pixelgl.KeyQ) {
 			return
 		}
 
-		win.Clear(color.Black)
-
-		dt := time.Since(last).Seconds()
-        last = time.Now()
-        if dt < 1 {
-        moveEntities()
-      }
-
-        haltPlayer()
 		if win.Pressed(pixelgl.KeyUp) || win.Pressed(pixelgl.KeyW) {
 			moveUp()
 		}
@@ -129,18 +128,24 @@ func run() {
 		}
 
 
+
+        // draw
+		win.Clear(color.Black)
 		p := pixel.PictureDataFromImage(frame())
+
+        c := win.Bounds().Center()
 
 		pixel.NewSprite(p, p.Bounds()).
 			Draw(win, pixel.IM.Moved(c).Scaled(c, scale))
 
+            // TODO: don't draw as fast as possible. bring t back.
 		win.Update()
 	}
 }
 
 func haltPlayer() {
-  player.Dir.X = 0
-  player.Dir.Y = 0
+	player.Dir.X = 0
+	player.Dir.Y = 0
 }
 func moveUp() {
 	player.Dir.Y = -1
