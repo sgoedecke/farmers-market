@@ -1,22 +1,18 @@
 package main
 
 import (
-	"image"
-	"image/color"
-    "time"
-    "fmt"
+	"fmt"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
+	"image"
+	"image/color"
+	"time"
 )
 
-type Coord struct {
-	X int
-	Y int
-}
-
 type Player struct {
-	Pos Coord
-	Dir Coord
+	Pos pixel.Vec
+	Dir pixel.Vec
+    Speed float64
 }
 
 type World struct {
@@ -29,9 +25,9 @@ var (
 	fullscreen = false
 	scale      = 10.0
 	world      = World{}
-    fps = 60.0
+	fps        = 100.0
 
-	player = Player{Coord{20, 20}, Coord{0, 0}}
+	player = Player{pixel.Vec{25, 25}, pixel.Vec{0, 0}, 0.4}
 )
 
 func setup() {
@@ -40,11 +36,12 @@ func setup() {
 }
 
 func moveEntities() {
-	newX := player.Pos.X + player.Dir.X
-	newY := player.Pos.Y + player.Dir.Y
-	if (newX > 0 && newX < world.Width) && (newY > 0 && newY < world.Height) {
-		player.Pos.X = newX
-		player.Pos.Y = newY
+	newX := player.Pos.X + (player.Dir.X * player.Speed)
+	newY := player.Pos.Y + (player.Dir.Y * player.Speed)
+
+	if (newX >= 0 && newX < float64(world.Width)) && (newY >= 0 && newY < float64(world.Height)) {
+		player.Pos.X = float64(newX)
+		player.Pos.Y = float64(newY)
 	}
 }
 
@@ -52,8 +49,9 @@ func moveEntities() {
 // the image.RGBA buffer
 func frame() *image.RGBA {
 
-	m := image.NewRGBA(image.Rect(0, 0, world.Width, world.Height))
+	m := image.NewRGBA(image.Rect(0, 0, world.Width * int(scale), world.Height * int(scale)))
 
+    // draw tiles
 	var c color.RGBA
 	for x := 0; x < world.Width; x++ {
 		for y := 0; y < world.Height; y++ {
@@ -65,20 +63,30 @@ func frame() *image.RGBA {
 				c = color.RGBA{0, 0, 0, 1}
 			}
 
-			m.Set(x, y, c)
+            for ix := 0; ix < int(scale); ix++ { // TODO: replace with Tile.Draw & a texture
+              for iy := 0; iy < int(scale); iy++ {
+                m.Set((x * int(scale)) + ix, (y * int(scale)) + iy, c)
+              }
+            }
+
 		}
 	}
 
-	c = color.RGBA{200, 0, 0, 1}
-	m.Set(player.Pos.X, player.Pos.Y, c)
+    // draw player
+    c = color.RGBA{200, 0, 0, 1}
+    for ix := 0; ix < int(scale); ix++ { // TODO: replace with Tile.Draw & a texture/animation if walking
+      for iy := 0; iy < int(scale); iy++ {
+        m.Set(int((player.Pos.X * scale) + float64(ix)), int((player.Pos.Y * scale) + float64(iy)), c)
+      }
+    }
 
-	return m
+    return m
 }
 
 func run() {
 
 	cfg := pixelgl.WindowConfig{
-		Bounds:      pixel.R(0, 0, 1000,1000),
+		Bounds:      pixel.R(0, 0, 1000, 1000),
 		VSync:       true,
 		Undecorated: false,
 	}
@@ -94,19 +102,21 @@ func run() {
 
 	last := time.Now()
 	for !win.Closed() {
-       // advance game
+		// advance game
 
+		// if we're running faster than our fps, wait
 		dt := time.Since(last).Seconds()
-        if dt < 1/fps {
-          fmt.Println("Sleeping!")
-          time.Sleep(time.Duration(1/fps - dt)) // if we're running faster than our fps, wait
-        }
+		if dt < 1/fps {
+			fmt.Println("Sleeping!")
+			fmt.Println(1/fps - dt)
+			time.Sleep(time.Duration((1/fps - dt) * 1000000000)) // have to convert seconds to ns for the cast
+		}
 		last = time.Now()
 
-        moveEntities()
+		moveEntities()
 		haltPlayer()
 
-        // handle keys
+		// handle keys
 		if win.JustPressed(pixelgl.KeyEscape) || win.JustPressed(pixelgl.KeyQ) {
 			return
 		}
@@ -127,18 +137,23 @@ func run() {
 			moveRight()
 		}
 
-
-
-        // draw
+		// draw
 		win.Clear(color.Black)
 		p := pixel.PictureDataFromImage(frame())
 
-        c := win.Bounds().Center()
+		// offset the center of the screen so camera-following works
+		c := win.Bounds().Center().Add(pixel.Vec{float64(world.Width) * 0.5, float64(world.Height) * -0.5}.Scaled(scale))
+
+		// since we store player coordinates on the 2d array (0,0 is top left) but draw with
+		// Euclidean coordinates, we need to flip the X coord
+		playerPos := pixel.Vec{player.Pos.X * -1.0, player.Pos.Y}.Scaled(scale)
+        fmt.Println(playerPos)
+
+		d := playerPos.Add(c)
 
 		pixel.NewSprite(p, p.Bounds()).
-			Draw(win, pixel.IM.Moved(c).Scaled(c, scale))
+			Draw(win, pixel.IM.Moved(d))
 
-            // TODO: don't draw as fast as possible. bring t back.
 		win.Update()
 	}
 }
@@ -148,16 +163,16 @@ func haltPlayer() {
 	player.Dir.Y = 0
 }
 func moveUp() {
-	player.Dir.Y = -1
+	player.Dir.Y = -1.0
 }
 func moveDown() {
-	player.Dir.Y = 1
+	player.Dir.Y = 1.0
 }
 func moveLeft() {
-	player.Dir.X = -1
+	player.Dir.X = -1.0
 }
 func moveRight() {
-	player.Dir.X = 1
+	player.Dir.X = 1.0
 }
 
 func main() {
