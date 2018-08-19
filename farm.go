@@ -4,35 +4,76 @@ import (
 	"fmt"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
+	"github.com/nfnt/resize"
 	"image"
 	"image/color"
+	"image/draw"
+	"image/png"
+	"math"
+	"os"
 	"time"
 )
 
 type Player struct {
-	Pos pixel.Vec
-	Dir pixel.Vec
-    Speed float64
+	Pos     pixel.Vec
+	Dir     pixel.Vec
+	Speed   float64
+	Texture image.Image
 }
 
 type World struct {
-	Map    [50][50]int
-	Width  int
-	Height int
+	Map         [20][20]int
+	Width       int
+	Height      int
+	BaseTexture image.Image
 }
 
 var (
 	fullscreen = false
-	scale      = 10.0
+	scale      = 50.0
 	world      = World{}
-	fps        = 100.0
-
-	player = Player{pixel.Vec{25, 25}, pixel.Vec{0, 0}, 0.4}
+	fps        = 60.0
+	player     = Player{}
 )
 
 func setup() {
-	world.Height = 50
-	world.Width = 50
+  player.Pos = pixel.Vec{15,15}
+  player.Dir = pixel.Vec{0,0}
+  player.Speed = 0.2
+	world.Height = 20
+	world.Width = 20
+
+	playerTextureFile, err := os.Open("./assets/player.png")
+	defer playerTextureFile.Close()
+
+	playerTextures, err := png.Decode(playerTextureFile)
+	resizedPlayerTextures := resize.Resize(uint(scale * 5), 0, playerTextures, resize.NearestNeighbor)
+	player.Texture = resizedPlayerTextures
+
+	// load textures
+	textureFile, err := os.Open("./assets/nature-tileset.png")
+	defer textureFile.Close()
+
+	textures, err := png.Decode(textureFile)
+	if err != nil {
+		panic(err)
+	}
+
+	resizedTextures := resize.Resize(uint(scale*20), 0, textures, resize.NearestNeighbor)
+
+	baseTexture := image.NewRGBA(image.Rect(0, 0, world.Width*int(scale), world.Height*int(scale)))
+	baseTextureSize := 50 // size of the grass tile in nature-tileset.png
+	for x := 0; x <= baseTexture.Rect.Dx(); x += baseTextureSize {
+		for y := 0; y <= baseTexture.Rect.Dy(); y += baseTextureSize {
+			draw.Draw(baseTexture,
+				image.Rect(x, y, x+baseTextureSize, y+baseTextureSize),
+				resizedTextures,
+				image.Pt(0, 0),
+				draw.Src)
+		}
+	}
+
+	world.BaseTexture = baseTexture
 }
 
 func moveEntities() {
@@ -49,38 +90,62 @@ func moveEntities() {
 // the image.RGBA buffer
 func frame() *image.RGBA {
 
-	m := image.NewRGBA(image.Rect(0, 0, world.Width * int(scale), world.Height * int(scale)))
+	m := image.NewRGBA(image.Rect(0, 0, world.Width*int(scale), world.Height*int(scale)))
 
-    // draw tiles
-	var c color.RGBA
+	// OPTIMIZATION: start by drawing the default texture across everything. this lets us avoid drawing it
+	// every single tile one at a time
+	draw.Draw(m,
+		m.Bounds(),
+		world.BaseTexture,
+		image.Pt(0, 0),
+		draw.Src)
+
+	// draw tiles
 	for x := 0; x < world.Width; x++ {
 		for y := 0; y < world.Height; y++ {
 			tile := world.Map[x][y]
-			if tile == 0 {
-				c = color.RGBA{200, 200, 200, 1} // black
 
-			} else {
-				c = color.RGBA{0, 0, 0, 1}
+			// OPTIMIZATION: if the tile is not in view, don't bother drawing it to the buffer
+			if math.Abs(player.Pos.X-float64(x)) > 15 || math.Abs(player.Pos.Y-float64(y)) > 15 {
+				continue
 			}
 
-            for ix := 0; ix < int(scale); ix++ { // TODO: replace with Tile.Draw & a texture
-              for iy := 0; iy < int(scale); iy++ {
-                m.Set((x * int(scale)) + ix, (y * int(scale)) + iy, c)
-              }
-            }
+			if tile == 0 {
+				// don't draw, since we've already got the standard texture
+
+			} else {
+				fmt.Println(tile)
+                // TODO: add non-player entities
+			}
 
 		}
 	}
 
-    // draw player
-    c = color.RGBA{200, 0, 0, 1}
-    for ix := 0; ix < int(scale); ix++ { // TODO: replace with Tile.Draw & a texture/animation if walking
-      for iy := 0; iy < int(scale); iy++ {
-        m.Set(int((player.Pos.X * scale) + float64(ix)), int((player.Pos.Y * scale) + float64(iy)), c)
-      }
+	// draw player
+
+    tx := 18
+    ty := 25
+
+    if player.Dir.X == -1 {
+      ty = 360
+    }
+    if player.Dir.X == 1 {
+      ty = 140
     }
 
-    return m
+    if player.Dir.Y == -1 {
+      ty = 25
+    }
+    if player.Dir.Y == 1 {
+      ty = 250
+    }
+	draw.Draw(m,
+		image.Rect(int(player.Pos.X*scale), int(player.Pos.Y*scale), int((player.Pos.X+1)*scale), int((player.Pos.Y+2)*scale)),
+		player.Texture,
+		image.Pt(tx, ty),
+		draw.Src)
+
+	return m
 }
 
 func run() {
@@ -110,6 +175,9 @@ func run() {
 			fmt.Println("Sleeping!")
 			fmt.Println(1/fps - dt)
 			time.Sleep(time.Duration((1/fps - dt) * 1000000000)) // have to convert seconds to ns for the cast
+		} else {
+			fmt.Println("Running slow")
+			fmt.Println(time.Duration((1/fps - dt) * 1000000000))
 		}
 		last = time.Now()
 
@@ -147,7 +215,6 @@ func run() {
 		// since we store player coordinates on the 2d array (0,0 is top left) but draw with
 		// Euclidean coordinates, we need to flip the X coord
 		playerPos := pixel.Vec{player.Pos.X * -1.0, player.Pos.Y}.Scaled(scale)
-        fmt.Println(playerPos)
 
 		d := playerPos.Add(c)
 
