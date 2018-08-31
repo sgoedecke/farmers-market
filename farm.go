@@ -61,6 +61,7 @@ func setup() {
 
 	resizedTextures := resize.Resize(uint(scale*20), 0, textures, resize.NearestNeighbor)
 
+    // generate base texture by tiling the grass tile to the size of the world
 	baseTexture := image.NewRGBA(image.Rect(0, 0, world.Width*int(scale), world.Height*int(scale)))
 	baseTextureSize := 50 // size of the grass tile in nature-tileset.png
 	for x := 0; x <= baseTexture.Rect.Dx(); x += baseTextureSize {
@@ -143,7 +144,7 @@ func frame() *image.RGBA {
 		image.Rect(int(player.Pos.X*scale), int(player.Pos.Y*scale), int((player.Pos.X+1)*scale), int((player.Pos.Y+2)*scale)),
 		player.Texture,
 		image.Pt(tx, ty),
-		draw.Src)
+		draw.Over) // need to use Over rather than Src here to respect transparent background
 
 	return m
 }
