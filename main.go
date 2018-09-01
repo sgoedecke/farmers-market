@@ -6,7 +6,6 @@ import (
 	"github.com/faiface/pixel/pixelgl"
 	"image"
 	"image/color"
-	"math"
 	"time"
 )
 
@@ -93,8 +92,12 @@ func run() {
 
 		player.SetActiveTextureCoord(world.Tick)
 
-		if math.Abs(float64(world.HighlightedTile.Tick-world.Tick)) > 10 {
-			world.HighlightedTile.Tick = 0
+		if world.HighlightedTile.Active {
+			world.HighlightedTile.Tick += 1
+			if world.HighlightedTile.Tick > 10 {
+				world.HighlightedTile.Tick = 0
+				world.HighlightedTile.Active = false
+			}
 		}
 
 		moveEntities()
@@ -146,10 +149,13 @@ func run() {
 }
 
 func actOnTile() {
+	// TODO: when player is motionless, Dir is 0 and not the last direction the player was pointing
+	// store the last direction the player was pointing and use it here instead
 	x := int(player.Pos.X) + int(player.Dir.X)
 	y := int(player.Pos.Y) + int(player.Dir.Y)
 	world.HighlightedTile.Pos = image.Point{x, y}
-	world.HighlightedTile.Tick = world.Tick
+	world.HighlightedTile.Active = true
+	world.HighlightedTile.Tick = 0
 }
 
 func haltPlayer() {

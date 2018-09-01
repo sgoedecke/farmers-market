@@ -14,6 +14,7 @@ type SelectedTile struct {
 	Pos     image.Point
 	Tick    int
 	Texture image.Image
+	Active  bool
 }
 
 type World struct {
@@ -113,8 +114,7 @@ func (world World) Draw(m *image.RGBA) {
 	tileX := int(float64(world.HighlightedTile.Pos.X) * scale)
 	tileY := int(float64(world.HighlightedTile.Pos.Y) * scale)
 	//draw highlighted tile
-	if world.HighlightedTile.Tick > 0 {
-		fmt.Println(world.HighlightedTile.Tick)
+	if world.HighlightedTile.Active {
 		draw.Draw(m,
 			image.Rect(tileX, tileY, tileX+int(scale), tileY+int(scale)),
 			world.HighlightedTile.Texture,
