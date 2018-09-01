@@ -10,12 +10,19 @@ import (
 	"os"
 )
 
+type SelectedTile struct {
+	Pos     image.Point
+	Tick    int
+	Texture image.Image
+}
+
 type World struct {
-	Map         [20][20]int
-	Width       int
-	Height      int
-	BaseTexture image.Image
-	Tick        int
+	Map             [20][20]int
+	Width           int
+	Height          int
+	BaseTexture     image.Image
+	Tick            int
+	HighlightedTile SelectedTile
 }
 
 func (world *World) LoadTextures() {
@@ -28,7 +35,16 @@ func (world *World) LoadTextures() {
 		panic(err)
 	}
 
-	resizedTextures := resize.Resize(uint(scale*20), 0, textures, resize.NearestNeighbor)
+	resizedTextures := resize.Resize(uint(scale*15), 0, textures, resize.NearestNeighbor)
+
+	// load highlightedtile texture
+	highlightedTileTexture := image.NewRGBA(image.Rect(0, 0, int(scale), int(scale)))
+	draw.Draw(highlightedTileTexture,
+		highlightedTileTexture.Bounds(),
+		resizedTextures,
+		image.Pt(395, 39),
+		draw.Over)
+	world.HighlightedTile.Texture = highlightedTileTexture
 
 	// generate base texture by tiling the grass tile to the size of the world
 	baseTexture := image.NewRGBA(image.Rect(0, 0, world.Width*int(scale), world.Height*int(scale)))
@@ -41,6 +57,26 @@ func (world *World) LoadTextures() {
 				image.Pt(0, 0),
 				draw.Src)
 		}
+	}
+
+	// draw shrubs and flowers
+	// 12 tiles right, 3 tiles down
+	shrubTextureCoords := image.Pt(395, 39)
+	shrubTextureSize := 40
+
+	shrubCoordSet := []image.Point{
+		image.Pt(400, 400),
+		image.Pt(450, 410),
+		image.Pt(350, 480),
+		image.Pt(150, 710),
+	}
+
+	for _, pt := range shrubCoordSet {
+		draw.Draw(baseTexture,
+			image.Rect(pt.X, pt.Y, pt.X+shrubTextureSize, pt.Y+shrubTextureSize),
+			resizedTextures,
+			shrubTextureCoords,
+			draw.Over)
 	}
 
 	world.BaseTexture = baseTexture
@@ -72,5 +108,17 @@ func (world World) Draw(m *image.RGBA) {
 				// TODO: add non-player entities
 			}
 		}
+	}
+
+	tileX := int(float64(world.HighlightedTile.Pos.X) * scale)
+	tileY := int(float64(world.HighlightedTile.Pos.Y) * scale)
+	//draw highlighted tile
+	if world.HighlightedTile.Tick > 0 {
+		fmt.Println(world.HighlightedTile.Tick)
+		draw.Draw(m,
+			image.Rect(tileX, tileY, tileX+int(scale), tileY+int(scale)),
+			world.HighlightedTile.Texture,
+			image.Pt(0, 0),
+			draw.Over)
 	}
 }

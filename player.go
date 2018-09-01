@@ -29,32 +29,37 @@ func (p *Player) LoadTextures() {
 	playerTextures, err := png.Decode(playerTextureFile)
 	resizedPlayerTextures := resize.Resize(textureMagnification, 0, playerTextures, resize.NearestNeighbor)
 	player.Texture = resizedPlayerTextures
+	player.Dir.X = 1 // set initial direction so a texture sprite loads
 }
 
 // based on the player's direction and the current tick, returns the top-left point
 // for the current image to draw.
 func (p *Player) SetActiveTextureCoord(tick int) {
-	ty := 10
-	tx := 0
+	if player.Dir.X == 0 && player.Dir.Y == 0 {
+		// leave the player's texture pt what it was before
+	} else {
+		ty := 10
+		tx := 0
 
-	texWidth := 37 // the width of each sprite on our rescaled texture sheet. nfi why.
+		texWidth := 37 // the width of each sprite on our rescaled texture sheet. nfi why.
 
-	// our sprite sheet has three sprites per walking frame, and max tick is 29. so we divide by 10 to get a
-	// smooth three-frame walking animation
-	if player.Dir.X == -1 {
-		tx = (9 + tick/10) * texWidth // start at the 9th sprite on the sheet (0-indexed)
-	}
-	if player.Dir.X == 1 {
-		tx = (0 + tick/10) * texWidth
-	}
+		// our sprite sheet has three sprites per walking frame, and max tick is 29. so we divide by 10 to get a
+		// smooth three-frame walking animation
+		if player.Dir.X == -1 {
+			tx = (9 + tick/10) * texWidth // start at the 9th sprite on the sheet (0-indexed)
+		}
+		if player.Dir.X == 1 {
+			tx = (0 + tick/10) * texWidth
+		}
 
-	if player.Dir.Y == -1 {
-		tx = (3 + tick/10) * texWidth
+		if player.Dir.Y == -1 {
+			tx = (3 + tick/10) * texWidth
+		}
+		if player.Dir.Y == 1 {
+			tx = (6 + tick/10) * texWidth
+		}
+		player.TexturePt = image.Pt(tx, ty)
 	}
-	if player.Dir.Y == 1 {
-		tx = (6 + tick/10) * texWidth
-	}
-	player.TexturePt = image.Pt(tx, ty)
 }
 
 func (p Player) Draw(m *image.RGBA) {

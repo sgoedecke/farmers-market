@@ -6,6 +6,7 @@ import (
 	"github.com/faiface/pixel/pixelgl"
 	"image"
 	"image/color"
+	"math"
 	"time"
 )
 
@@ -20,7 +21,7 @@ var (
 func setup() {
 	player.Pos = pixel.Vec{15, 15}
 	player.Dir = pixel.Vec{0, 0}
-	player.Speed = 0.2
+	player.Speed = 0.12
 	world.Height = 20
 	world.Width = 20
 
@@ -87,10 +88,14 @@ func run() {
 		// advance world tick - used for animations
 		world.Tick += 1
 		if world.Tick > 29 {
-			world.Tick = 0
+			world.Tick = 1
 		}
 
 		player.SetActiveTextureCoord(world.Tick)
+
+		if math.Abs(float64(world.HighlightedTile.Tick-world.Tick)) > 10 {
+			world.HighlightedTile.Tick = 0
+		}
 
 		moveEntities()
 		haltPlayer()
@@ -116,6 +121,10 @@ func run() {
 			moveRight()
 		}
 
+		if win.Pressed(pixelgl.KeyE) {
+			actOnTile()
+		}
+
 		// draw
 		win.Clear(color.Black)
 		p := pixel.PictureDataFromImage(frame())
@@ -134,6 +143,13 @@ func run() {
 
 		win.Update()
 	}
+}
+
+func actOnTile() {
+	x := int(player.Pos.X) + int(player.Dir.X)
+	y := int(player.Pos.Y) + int(player.Dir.Y)
+	world.HighlightedTile.Pos = image.Point{x, y}
+	world.HighlightedTile.Tick = world.Tick
 }
 
 func haltPlayer() {
