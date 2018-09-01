@@ -10,44 +10,59 @@ import (
 )
 
 type Player struct {
-	Pos     pixel.Vec
-	Dir     pixel.Vec
-	Speed   float64
-	Texture image.Image
+	Pos       pixel.Vec
+	Dir       pixel.Vec
+	Speed     float64
+	Texture   image.Image
+	TexturePt image.Point
 }
 
 func (p *Player) LoadTextures() {
-	playerTextureFile, err := os.Open("./assets/player.png")
+	playerTextureFile, err := os.Open("./assets/hero.png") // 20px/20px for each sprite
 	if err != nil {
 		panic(err)
 	}
 	defer playerTextureFile.Close()
 
+	textureMagnification := uint(scale * 10)
+
 	playerTextures, err := png.Decode(playerTextureFile)
-	resizedPlayerTextures := resize.Resize(uint(scale*5), 0, playerTextures, resize.NearestNeighbor)
+	resizedPlayerTextures := resize.Resize(textureMagnification, 0, playerTextures, resize.NearestNeighbor)
 	player.Texture = resizedPlayerTextures
 }
 
-func (p Player) Draw(m *image.RGBA) {
-	tx := 18
-	ty := 25
+// based on the player's direction and the current tick, returns the top-left point
+// for the current image to draw.
+func (p *Player) SetActiveTextureCoord(tick int) {
+	ty := 10
+	tx := 0
 
+	texWidth := 37 // the width of each sprite on our rescaled texture sheet. nfi why.
+
+	// our sprite sheet has three sprites per walking frame, and max tick is 29. so we divide by 10 to get a
+	// smooth three-frame walking animation
 	if player.Dir.X == -1 {
-		ty = 360
+		tx = (9 + tick/10) * texWidth // start at the 9th sprite on the sheet (0-indexed)
 	}
 	if player.Dir.X == 1 {
-		ty = 140
+		tx = (0 + tick/10) * texWidth
 	}
 
 	if player.Dir.Y == -1 {
-		ty = 25
+		tx = (3 + tick/10) * texWidth
 	}
 	if player.Dir.Y == 1 {
-		ty = 250
+		tx = (6 + tick/10) * texWidth
 	}
+	player.TexturePt = image.Pt(tx, ty)
+}
+
+func (p Player) Draw(m *image.RGBA) {
+	width := 0.8
+	// magic numbers 1 and 2 here correspond to tile width
 	draw.Draw(m,
-		image.Rect(int(player.Pos.X*scale), int(player.Pos.Y*scale), int((player.Pos.X+1)*scale), int((player.Pos.Y+2)*scale)),
+		image.Rect(int(player.Pos.X*scale), int(player.Pos.Y*scale), int((player.Pos.X+width)*scale), int((player.Pos.Y+1)*scale)),
 		player.Texture,
-		image.Pt(tx, ty),
+		player.TexturePt,
 		draw.Over) // need to use Over rather than Src here to respect transparent background
 }

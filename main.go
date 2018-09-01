@@ -75,14 +75,22 @@ func run() {
 		// if we're running faster than our fps, wait
 		dt := time.Since(last).Seconds()
 		if dt < 1/fps {
-			fmt.Println("Sleeping!")
-			fmt.Println(1/fps - dt)
+			//fmt.Println("Sleeping!")
+			//fmt.Println(1/fps - dt)
 			time.Sleep(time.Duration((1/fps - dt) * 1000000000)) // have to convert seconds to ns for the cast
 		} else {
 			fmt.Println("Running slow")
 			fmt.Println(time.Duration((1/fps - dt) * 1000000000))
 		}
 		last = time.Now()
+
+		// advance world tick - used for animations
+		world.Tick += 1
+		if world.Tick > 29 {
+			world.Tick = 0
+		}
+
+		player.SetActiveTextureCoord(world.Tick)
 
 		moveEntities()
 		haltPlayer()

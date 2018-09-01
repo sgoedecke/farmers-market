@@ -15,6 +15,7 @@ type World struct {
 	Width       int
 	Height      int
 	BaseTexture image.Image
+	Tick        int
 }
 
 func (world *World) LoadTextures() {
