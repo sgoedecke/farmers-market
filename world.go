@@ -10,13 +10,6 @@ import (
 	"os"
 )
 
-type SelectedTile struct {
-	Pos     image.Point
-	Tick    int
-	Texture image.Image
-	Active  bool
-}
-
 type World struct {
 	Map             [20][20]int
 	Width           int
@@ -37,18 +30,6 @@ func (world *World) LoadTextures() {
 	}
 
 	resizedTextures := resize.Resize(uint(scale*15), 0, textures, resize.NearestNeighbor)
-
-	// load highlightedtile texture
-	tileTextureFile, err := os.Open("./assets/selectedtile.png") // 20px/20px
-	if err != nil {
-		panic(err)
-	}
-	defer tileTextureFile.Close()
-
-	textureMagnification := uint(scale)
-	tileTexture, err := png.Decode(tileTextureFile)
-	highlightedTileTexture := resize.Resize(textureMagnification, 0, tileTexture, resize.NearestNeighbor)
-	world.HighlightedTile.Texture = highlightedTileTexture
 
 	// generate base texture by tiling the grass tile to the size of the world
 	baseTexture := image.NewRGBA(image.Rect(0, 0, world.Width*int(scale), world.Height*int(scale)))
@@ -114,10 +95,11 @@ func (world World) Draw(m *image.RGBA) {
 		}
 	}
 
-	tileX := int(float64(world.HighlightedTile.Pos.X) * scale)
-	tileY := int(float64(world.HighlightedTile.Pos.Y) * scale)
 	//draw highlighted tile
 	if world.HighlightedTile.Active {
+		tileX := int(float64(world.HighlightedTile.Pos.X) * scale)
+		tileY := int(float64(world.HighlightedTile.Pos.Y) * scale)
+		//draw highlighted tile
 		draw.Draw(m,
 			image.Rect(tileX, tileY, tileX+int(scale), tileY+int(scale)),
 			world.HighlightedTile.Texture,

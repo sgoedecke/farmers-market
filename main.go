@@ -26,6 +26,7 @@ func setup() {
 
 	player.LoadTextures()
 	world.LoadTextures()
+	world.HighlightedTile.LoadTextures()
 }
 
 func moveEntities() {
@@ -156,6 +157,8 @@ func actOnTile() {
 	x := int(player.Pos.X) + int(player.Dir.X)
 	y := int(player.Pos.Y) + int(player.Dir.Y)
 	world.HighlightedTile.Pos = image.Point{x, y}
+
+	//world.HighlightedTile.Pos = image.Point{int(player.Pos.X), int(player.Pos.Y)}
 	world.HighlightedTile.Active = true
 	world.HighlightedTile.Tick = 0
 }
