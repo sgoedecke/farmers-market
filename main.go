@@ -29,12 +29,14 @@ func setup() {
 }
 
 func moveEntities() {
-	newX := player.Pos.X + (player.Dir.X * player.Speed)
-	newY := player.Pos.Y + (player.Dir.Y * player.Speed)
+	if player.Moving {
+		newX := player.Pos.X + (player.Dir.X * player.Speed)
+		newY := player.Pos.Y + (player.Dir.Y * player.Speed)
 
-	if (newX >= 0 && newX < float64(world.Width)) && (newY >= 0 && newY < float64(world.Height)) {
-		player.Pos.X = float64(newX)
-		player.Pos.Y = float64(newY)
+		if (newX >= 0 && newX < float64(world.Width)) && (newY >= 0 && newY < float64(world.Height)) {
+			player.Pos.X = float64(newX)
+			player.Pos.Y = float64(newY)
+		}
 	}
 }
 
@@ -159,20 +161,27 @@ func actOnTile() {
 }
 
 func haltPlayer() {
-	player.Dir.X = 0
-	player.Dir.Y = 0
+	player.Moving = false
 }
 func moveUp() {
 	player.Dir.Y = -1.0
+	player.Dir.X = 0.0
+	player.Moving = true
 }
 func moveDown() {
 	player.Dir.Y = 1.0
+	player.Dir.X = 0.0
+	player.Moving = true
 }
 func moveLeft() {
 	player.Dir.X = -1.0
+	player.Dir.Y = 0.0
+	player.Moving = true
 }
 func moveRight() {
 	player.Dir.X = 1.0
+	player.Dir.Y = 0.0
+	player.Moving = true
 }
 
 func main() {

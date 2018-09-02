@@ -15,6 +15,7 @@ type Player struct {
 	Speed     float64
 	Texture   image.Image
 	TexturePt image.Point
+	Moving    bool
 }
 
 func (p *Player) LoadTextures() {
@@ -35,7 +36,7 @@ func (p *Player) LoadTextures() {
 // based on the player's direction and the current tick, returns the top-left point
 // for the current image to draw.
 func (p *Player) SetActiveTextureCoord(tick int) {
-	if player.Dir.X == 0 && player.Dir.Y == 0 {
+	if !player.Moving {
 		// leave the player's texture pt what it was before
 	} else {
 		ty := 10

@@ -39,12 +39,15 @@ func (world *World) LoadTextures() {
 	resizedTextures := resize.Resize(uint(scale*15), 0, textures, resize.NearestNeighbor)
 
 	// load highlightedtile texture
-	highlightedTileTexture := image.NewRGBA(image.Rect(0, 0, int(scale), int(scale)))
-	draw.Draw(highlightedTileTexture,
-		highlightedTileTexture.Bounds(),
-		resizedTextures,
-		image.Pt(395, 39),
-		draw.Over)
+	tileTextureFile, err := os.Open("./assets/selectedtile.png") // 20px/20px
+	if err != nil {
+		panic(err)
+	}
+	defer tileTextureFile.Close()
+
+	textureMagnification := uint(scale)
+	tileTexture, err := png.Decode(tileTextureFile)
+	highlightedTileTexture := resize.Resize(textureMagnification, 0, tileTexture, resize.NearestNeighbor)
 	world.HighlightedTile.Texture = highlightedTileTexture
 
 	// generate base texture by tiling the grass tile to the size of the world
