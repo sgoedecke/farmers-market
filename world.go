@@ -45,23 +45,27 @@ func (world *World) LoadTextures() {
 	}
 
 	// draw shrubs and flowers
-	// 12 tiles right, 3 tiles down
 	shrubTextureCoords := image.Pt(395, 39)
-	shrubTextureSize := 40
-
-	shrubCoordSet := []image.Point{
-		image.Pt(400, 400),
-		image.Pt(450, 410),
-		image.Pt(350, 480),
-		image.Pt(150, 710),
-	}
-
-	for _, pt := range shrubCoordSet {
-		draw.Draw(baseTexture,
-			image.Rect(pt.X, pt.Y, pt.X+shrubTextureSize, pt.Y+shrubTextureSize),
-			resizedTextures,
-			shrubTextureCoords,
-			draw.Over)
+	wallTextureCoords := image.Pt(0, 270)
+	tileTextureSize := 40
+	for x := 0; x < world.Width; x++ {
+		for y := 0; y < world.Height; y++ {
+			tile := world.Map[x][y]
+			if tile == 1 {
+				draw.Draw(baseTexture,
+					image.Rect(x*int(scale), y*int(scale), (x*int(scale))+tileTextureSize, (y*int(scale))+tileTextureSize),
+					resizedTextures,
+					wallTextureCoords,
+					draw.Over)
+			}
+			if tile == 2 {
+				draw.Draw(baseTexture,
+					image.Rect(x*int(scale), y*int(scale), (x*int(scale))+tileTextureSize, (y*int(scale))+tileTextureSize),
+					resizedTextures,
+					shrubTextureCoords,
+					draw.Over)
+			}
+		}
 	}
 
 	world.BaseTexture = baseTexture
