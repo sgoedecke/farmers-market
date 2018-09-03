@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/nfnt/resize"
 	"image"
 	"image/draw"
@@ -31,6 +30,7 @@ func (world *World) LoadTextures() {
 
 	resizedTextures := resize.Resize(uint(scale*15), 0, textures, resize.NearestNeighbor)
 
+	// TODO: this whole thing could be replaced with a single static image
 	// generate base texture by tiling the grass tile to the size of the world
 	baseTexture := image.NewRGBA(image.Rect(0, 0, world.Width*int(scale), world.Height*int(scale)))
 	baseTextureSize := 50 // size of the grass tile in nature-tileset.png
@@ -44,9 +44,10 @@ func (world *World) LoadTextures() {
 		}
 	}
 
-	// draw shrubs and flowers
+	// draw tile sprites
 	shrubTextureCoords := image.Pt(395, 39)
 	wallTextureCoords := image.Pt(0, 270)
+	pathTextureCoords := image.Pt(513, 39)
 	tileTextureSize := 40
 	for x := 0; x < world.Width; x++ {
 		for y := 0; y < world.Height; y++ {
@@ -63,6 +64,13 @@ func (world *World) LoadTextures() {
 					image.Rect(x*int(scale), y*int(scale), (x*int(scale))+tileTextureSize, (y*int(scale))+tileTextureSize),
 					resizedTextures,
 					shrubTextureCoords,
+					draw.Over)
+			}
+			if tile == 3 {
+				draw.Draw(baseTexture,
+					image.Rect(x*int(scale), y*int(scale), (x*int(scale))+tileTextureSize, (y*int(scale))+tileTextureSize),
+					resizedTextures,
+					pathTextureCoords,
 					draw.Over)
 			}
 		}
@@ -93,7 +101,6 @@ func (world World) Draw(m *image.RGBA) {
 			if tile == 0 {
 				// don't draw, since we've already got the standard texture
 			} else {
-				fmt.Println(tile)
 				// TODO: add non-player entities
 			}
 		}
