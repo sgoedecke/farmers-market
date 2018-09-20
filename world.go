@@ -46,9 +46,9 @@ func (world *World) LoadTextures() {
 
 	// draw tile sprites
 	shrubTextureCoords := image.Pt(395, 39)
-	wallTextureCoords := image.Pt(0, 270)
+	wallTextureCoords := image.Pt(0, 450)
 	pathTextureCoords := image.Pt(513, 39)
-	tileTextureSize := 40
+	tileTextureSize := 50 // any smaller and it doesn't fill the whole tile
 	for x := 0; x < world.Width; x++ {
 		for y := 0; y < world.Height; y++ {
 			tile := world.Map[x][y]
